@@ -14,10 +14,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Student {
   id       Int     @id @default(autoincrement())
   name     String  @unique
   contact  String  @unique
+  password String  @default("1234")
   School   School? @relation(fields: [schoolId], references: [id])
   schoolId Int?
 }
