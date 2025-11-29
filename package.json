@@ -8,7 +8,7 @@
   "scripts": {
     "start": "nodemon index.js",
     "db:seed": "prisma db seed",
-    "test": "jest"
+    "test": "jest --coverage"
   },
   "keywords": [],
   "author": "",
