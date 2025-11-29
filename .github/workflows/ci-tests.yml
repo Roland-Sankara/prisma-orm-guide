@@ -11,6 +11,7 @@ on:
 
 env:
   DATABASE_URL: postgresql://postgres:roland@DB@localhost:5432/prismadb?schema=public
+  JWT_SECRET: 1234Secret
 
 # 2. Define a job
 jobs:
