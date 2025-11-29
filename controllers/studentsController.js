@@ -1,46 +1,77 @@
-const { PrismaClient } = require('../generated/prisma');
-const prisma = new PrismaClient()
-const jwt = require('jsonwebtoken')
-require('dotenv').config();
+const { PrismaClient } = require("../generated/prisma");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+require("dotenv").config();
 
-const userLogin = async (req, res)=>{
+const prisma = new PrismaClient();
 
-    // lookup all students and find one with the given name
-    let student = await prisma.student.findUnique({
-        where:{
-            name: req.body.name 
-        }
-    })
+const getAllStudents = async (req, res) => {
+  let students = await prisma.student.findMany();
+  res.send(students);
+};
 
-    if (student){
-        // password matching
-        if(student.password === req.body.password){
-            // login the user
+const loginStudent = async (req, res) => {
+  // req.body (name, password)
 
-            // create the JWT
-            let token = jwt.sign(
-                {
-                    name: student.name,
-                    contact: student.contact
-                }
-                ,
-                process.env.JWT_SECRET
-                ,
-                {
-                    expiresIn: "1h"
-                }
-            )
+  // look up the database for a user with the given name
+  let student = await prisma.student.findUnique({
+    where: {
+      name: req.body.name,
+    },
+  });
 
-            res.send({message:"Sucessfully LoggedIn", token: token})
-        }else{
-            res.send("Password Invalid.. Try Again")
-        }
-    }else{
-        res.send("Student Not Found - 404!")
+  if (student) {
+    bcrypt.compare(req.body.password, student.password, (err, result) => {
+      if (result) {
+        // payload
+        let payload = {
+          sub: student.id,
+          name: student.name,
+        };
+
+        // create the token
+        jwt.sign(
+          payload,
+          process.env.JWT_SECRET,
+          { expiresIn: "1h" },
+          (err, token) => {
+            if (err) {
+              res.send("failed to create token");
+            } else {
+              // send to the user
+              res.send({ message: "Succesfully Logged In", token: token });
+            }
+          }
+        );
+      } else {
+        res.send("Password is incorrect");
+      }
+    });
+  } else {
+    res.send("Student Not Found");
+  }
+};
+
+const createStudent = async (req, res) => {
+  bcrypt.hash(req.body.password, 10, async (err, hashed) => {
+    if (!err) {
+      let newStudent = await prisma.student.create({
+        data: {
+          name: req.body.name,
+          contact: req.body.contact,
+          password: hashed,
+        },
+      });
+
+      if (newStudent) {
+        res.send("New Student Created");
+      }
     }
-}
-
+  });
+};
 
 module.exports = {
-    userLogin
-}
+  getAllStudents,
+  loginStudent,
+  createStudent,
+};
